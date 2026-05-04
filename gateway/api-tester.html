@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Tester — E-Commerce Microservices</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-green: #22c55e;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+            --border: #475569;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .sidebar h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .api-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+        .api-item:hover { background: var(--bg-tertiary); }
+        .api-item.active { background: var(--bg-tertiary); border: 1px solid var(--accent-blue); }
+        .method-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 4px;
+            min-width: 42px;
+            text-align: center;
+        }
+        .method-get { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+        .method-post { background: rgba(249,115,22,0.15); color: var(--accent-orange); }
+        .method-delete { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+        .api-item .name { font-size: 13px; font-weight: 500; }
+        .api-item .desc { font-size: 11px; color: var(--text-secondary); }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        /* Request bar */
+        .request-bar {
+            padding: 16px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .method-select {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--accent-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            min-width: 90px;
+        }
+        .url-input {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            outline: none;
+        }
+        .url-input:focus { border-color: var(--accent-blue); }
+        .send-btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 10px 28px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .send-btn:hover { opacity: 0.9; transform: scale(1.02); }
+        .send-btn:active { transform: scale(0.98); }
+        .send-btn.loading { opacity: 0.6; cursor: wait; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+        }
+        .tab {
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+        .tab:hover { color: var(--text-primary); }
+
+        /* Tab content */
+        .tab-content { display: none; padding: 16px 24px; }
+        .tab-content.active { display: block; }
+
+        /* Auth input */
+        .auth-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .auth-row label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            min-width: 80px;
+        }
+        .auth-row input {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            outline: none;
+        }
+        .auth-row input:focus { border-color: var(--accent-blue); }
+
+        /* Body textarea */
+        .body-editor {
+            width: 100%;
+            min-height: 120px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            padding: 12px;
+            border-radius: 8px;
+            resize: vertical;
+            outline: none;
+        }
+        .body-editor:focus { border-color: var(--accent-blue); }
+
+        /* Response area */
+        .response-area {
+            flex: 1;
+            overflow: auto;
+            padding: 0;
+        }
+        .response-header {
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .response-header h3 {
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .status-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+        .status-2xx { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+        .status-4xx { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+        .status-5xx { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+        .time-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .response-body {
+            padding: 16px 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: var(--text-primary);
+        }
+        .response-empty {
+            padding: 60px 24px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .json-key { color: #7dd3fc; }
+        .json-string { color: #86efac; }
+        .json-number { color: #fbbf24; }
+        .json-bool { color: #c084fc; }
+        .json-null { color: #94a3b8; }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 API Tester</h1>
+        <span class="subtitle">E-Commerce Microservices — Chapter 4 Testing</span>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Authentication</h3>
+            <div class="api-item" onclick="loadPreset('register')">
+                <span class="method-badge method-post">POST</span>
+                <div><div class="name">Register</div><div class="desc">/users/</div></div>
+            </div>
+            <div class="api-item" onclick="loadPreset('login')">
+                <span class="method-badge method-post">POST</span>
+                <div><div class="name">Login</div><div class="desc">/users/login/</div></div>
+            </div>
+            <div class="api-item" onclick="loadPreset('profile')">
+                <span class="method-badge method-get">GET</span>
+                <div><div class="name">User Profile</div><div class="desc">/users/me/</div></div>
+            </div>
+
+            <div class="divider"></div>
+            <h3>Products</h3>
+            <div class="api-item" onclick="loadPreset('products')">
+                <span class="method-badge method-get">GET</span>
+                <div><div class="name">Product List</div><div class="desc">/products/</div></div>
+            </div>
+            <div class="api-item" onclick="loadPreset('product_detail')">
+                <span class="method-badge method-get">GET</span>
+                <div><div class="name">Product Detail</div><div class="desc">/products/{id}/</div></div>
+            </div>
+
+            <div class="divider"></div>
+            <h3>Cart</h3>
+            <div class="api-item" onclick="loadPreset('cart_view')">
+                <span class="method-badge method-get">GET</span>
+                <div><div class="name">View Cart</div><div class="desc">/carts/</div></div>
+            </div>
+            <div class="api-item" onclick="loadPreset('cart_add')">
+                <span class="method-badge method-post">POST</span>
+                <div><div class="name">Add to Cart</div><div class="desc">/carts/add/</div></div>
+            </div>
+
+            <div class="divider"></div>
+            <h3>Orders</h3>
+            <div class="api-item" onclick="loadPreset('order_create')">
+                <span class="method-badge method-post">POST</span>
+                <div><div class="name">Create Order</div><div class="desc">/orders/</div></div>
+            </div>
+            <div class="api-item" onclick="loadPreset('order_list')">
+                <span class="method-badge method-get">GET</span>
+                <div><div class="name">Order List</div><div class="desc">/orders/</div></div>
+            </div>
+
+            <div class="divider"></div>
+            <h3>AI Service</h3>
+            <div class="api-item" onclick="loadPreset('ai_chat')">
+                <span class="method-badge method-post">POST</span>
+                <div><div class="name">AI Chatbot</div><div class="desc">/ai/chat/</div></div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="request-bar">
+                <select class="method-select" id="method">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                </select>
+                <input type="text" class="url-input" id="url" placeholder="Enter request URL..." value="http://localhost/products/">
+                <button class="send-btn" id="sendBtn" onclick="sendRequest()">Send</button>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('auth')">Authorization</div>
+                <div class="tab" onclick="switchTab('body')">Body</div>
+                <div class="tab" onclick="switchTab('headers')">Headers</div>
+            </div>
+
+            <div id="tab-auth" class="tab-content active">
+                <div class="auth-row">
+                    <label>Type:</label>
+                    <span style="color:var(--accent-orange);font-weight:600;">Bearer Token</span>
+                </div>
+                <div class="auth-row">
+                    <label>Token:</label>
+                    <input type="text" id="authToken" placeholder="Paste JWT access token here...">
+                </div>
+                <div style="margin-top:8px;font-size:12px;color:var(--text-secondary)">
+                    💡 Login first to get a token, then paste it here for authenticated requests.
+                </div>
+            </div>
+
+            <div id="tab-body" class="tab-content">
+                <div style="margin-bottom:8px;font-size:12px;color:var(--text-secondary);">
+                    Content-Type: application/json
+                </div>
+                <textarea class="body-editor" id="requestBody" placeholder='{"key": "value"}'></textarea>
+            </div>
+
+            <div id="tab-headers" class="tab-content">
+                <div class="auth-row">
+                    <label>Content-Type:</label>
+                    <input type="text" value="application/json" readonly style="opacity:0.7">
+                </div>
+            </div>
+
+            <div class="response-area">
+                <div class="response-header" id="responseHeader" style="display:none">
+                    <h3>Response</h3>
+                    <span class="status-badge" id="statusBadge"></span>
+                    <span class="time-badge" id="timeBadge"></span>
+                </div>
+                <div class="response-body" id="responseBody">
+                    <div class="response-empty">
+                        <div style="font-size:40px;margin-bottom:16px">📡</div>
+                        <div>Click <strong>Send</strong> to make a request</div>
+                        <div style="margin-top:8px;font-size:12px">Or select an API from the sidebar</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const presets = {
+            register: {
+                method: 'POST',
+                url: '/users/',
+                body: JSON.stringify({username:"testuser2026",email:"testuser2026@test.com",password:"Test@123456",password_confirm:"Test@123456"}, null, 2),
+                auth: false
+            },
+            login: {
+                method: 'POST',
+                url: '/users/login/',
+                body: JSON.stringify({username:"testuser2026",password:"Test@123456"}, null, 2),
+                auth: false
+            },
+            profile: {
+                method: 'GET',
+                url: '/users/me/',
+                body: '',
+                auth: true
+            },
+            products: {
+                method: 'GET',
+                url: '/products/',
+                body: '',
+                auth: false
+            },
+            product_detail: {
+                method: 'GET',
+                url: '/products/?search=iphone',
+                body: '',
+                auth: false
+            },
+            cart_view: {
+                method: 'GET',
+                url: '/carts/',
+                body: '',
+                auth: true
+            },
+            cart_add: {
+                method: 'POST',
+                url: '/carts/add/',
+                body: JSON.stringify({product_id:50,quantity:2}, null, 2),
+                auth: true
+            },
+            order_create: {
+                method: 'POST',
+                url: '/orders/',
+                body: JSON.stringify({shipping_address:"123 Test Street, Ho Chi Minh City, Vietnam"}, null, 2),
+                auth: true
+            },
+            order_list: {
+                method: 'GET',
+                url: '/orders/',
+                body: '',
+                auth: true
+            },
+            ai_chat: {
+                method: 'POST',
+                url: '/ai/chat/',
+                body: JSON.stringify({message:"Tôi muốn mua điện thoại giá rẻ, bạn có gợi ý gì không?"}, null, 2),
+                auth: false
+            }
+        };
+
+        function loadPreset(name) {
+            const p = presets[name];
+            document.getElementById('method').value = p.method;
+            document.getElementById('url').value = p.url;
+            document.getElementById('requestBody').value = p.body;
+            updateMethodColor();
+            // Highlight sidebar
+            document.querySelectorAll('.api-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            // Switch to body tab if body exists
+            if (p.body) switchTab('body');
+            else switchTab('auth');
+        }
+
+        function updateMethodColor() {
+            const method = document.getElementById('method').value;
+            const select = document.getElementById('method');
+            select.style.color = method === 'GET' ? 'var(--accent-green)' :
+                                 method === 'POST' ? 'var(--accent-orange)' :
+                                 method === 'DELETE' ? 'var(--accent-red)' : 'var(--accent-blue)';
+        }
+
+        document.getElementById('method').addEventListener('change', updateMethodColor);
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.currentTarget?.classList.add('active');
+            document.querySelectorAll('.tab').forEach(t => {
+                if (t.textContent.toLowerCase().includes(name.substring(0,4))) t.classList.add('active');
+            });
+            document.getElementById('tab-' + name).classList.add('active');
+        }
+
+        function syntaxHighlight(json) {
+            if (typeof json !== 'string') json = JSON.stringify(json, null, 2);
+            json = json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) cls = 'json-key';
+                    else cls = 'json-string';
+                } else if (/true|false/.test(match)) cls = 'json-bool';
+                else if (/null/.test(match)) cls = 'json-null';
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        async function sendRequest() {
+            const method = document.getElementById('method').value;
+            const url = document.getElementById('url').value;
+            const body = document.getElementById('requestBody').value;
+            const token = document.getElementById('authToken').value;
+            const btn = document.getElementById('sendBtn');
+
+            btn.textContent = 'Sending...';
+            btn.classList.add('loading');
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+
+            const options = { method, headers };
+            if (method !== 'GET' && body) options.body = body;
+
+            const start = performance.now();
+            try {
+                const response = await fetch(url, options);
+                const elapsed = Math.round(performance.now() - start);
+                const data = await response.json();
+
+                // Show response
+                document.getElementById('responseHeader').style.display = 'flex';
+                const statusBadge = document.getElementById('statusBadge');
+                statusBadge.textContent = response.status + ' ' + response.statusText;
+                statusBadge.className = 'status-badge ' + (response.status < 300 ? 'status-2xx' : response.status < 500 ? 'status-4xx' : 'status-5xx');
+                document.getElementById('timeBadge').textContent = elapsed + ' ms';
+                document.getElementById('responseBody').innerHTML = syntaxHighlight(JSON.stringify(data, null, 2));
+
+                // Auto-save token if login response
+                if (data.access) {
+                    document.getElementById('authToken').value = data.access;
+                }
+            } catch (err) {
+                document.getElementById('responseHeader').style.display = 'flex';
+                document.getElementById('statusBadge').textContent = 'Error';
+                document.getElementById('statusBadge').className = 'status-badge status-5xx';
+                document.getElementById('timeBadge').textContent = '';
+                document.getElementById('responseBody').innerHTML = '<span style="color:var(--accent-red)">' + err.message + '</span>';
+            }
+
+            btn.textContent = 'Send';
+            btn.classList.remove('loading');
+        }
+    </script>
+</body>
+</html>

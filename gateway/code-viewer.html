@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Service Source Code — Chapter 3</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <style>
+        :root { --bg:#1e1e2e; --surface:#282a36; --border:#44475a; --text:#f8f8f2; --accent:#bd93f9; --green:#50fa7b; --pink:#ff79c6; --cyan:#8be9fd; --orange:#ffb86c; --yellow:#f1fa8c; --comment:#6272a4; }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .header{background:linear-gradient(135deg,#282a36,#1e1e2e);border-bottom:1px solid var(--border);padding:20px 40px;display:flex;align-items:center;gap:16px}
+        .header h1{font-size:22px;background:linear-gradient(135deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .header .sub{color:var(--comment);font-size:14px}
+        .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 40px;gap:0;overflow-x:auto}
+        .tab{padding:14px 24px;font-size:13px;font-weight:600;color:var(--comment);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s}
+        .tab:hover{color:var(--text)}
+        .tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+        .code-section{display:none;padding:0}
+        .code-section.active{display:block}
+        .file-header{padding:12px 40px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;font-size:13px}
+        .file-icon{color:var(--yellow);font-size:16px}
+        .file-path{color:var(--comment);font-family:'JetBrains Mono',monospace;font-size:12px}
+        .file-name{color:var(--green);font-weight:600}
+        .desc{padding:12px 40px;background:rgba(80,250,123,0.05);border-bottom:1px solid var(--border);color:var(--green);font-size:13px;font-style:italic}
+        pre{margin:0!important;padding:20px 40px!important;background:var(--bg)!important;border-radius:0!important;overflow-x:auto}
+        code{font-family:'JetBrains Mono',monospace!important;font-size:13px!important;line-height:1.7!important}
+        .hljs{background:var(--bg)!important}
+        .section-divider{padding:8px 40px;background:var(--surface);border-top:2px solid var(--accent);border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);font-weight:700}
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🧠 AI Service — Source Code</h1>
+    <span class="sub">E-Commerce Microservices | Chapter 3</span>
+</div>
+
+<div class="tabs">
+    <div class="tab active" onclick="showTab(0)">1. LSTM Model</div>
+    <div class="tab" onclick="showTab(1)">2. Neo4j Graph</div>
+    <div class="tab" onclick="showTab(2)">3. Recommendation API</div>
+    <div class="tab" onclick="showTab(3)">4. Chatbot</div>
+</div>
+
+<!-- TAB 1: LSTM MODEL -->
+<div class="code-section active" id="tab0">
+    <div class="section-divider">Part 1 — LSTM Model Definition (Chapter 3.4.2)</div>
+    <div class="file-header">
+        <span class="file-icon">🐍</span>
+        <span class="file-name">lstm_model.py</span>
+        <span class="file-path">ai-service/app/models/lstm_model.py</span>
+    </div>
+    <div class="desc">LSTM Neural Network cho dự đoán sản phẩm tiếp theo (next-item prediction)</div>
+    <pre><code class="language-python">"""
+LSTM Model — Chapter 3.4.2
+
+Exactly follows the PDF specification:
+
+    class LSTMModel(nn.Module):
+        def __init__(self, input_dim=10, hidden_dim=64, output_dim=100):
+            super().__init__()
+            self.lstm = nn.LSTM(input_dim, hidden_dim, batch_first=True)
+            self.fc = nn.Linear(hidden_dim, output_dim)
+
+        def forward(self, x):
+            out, _ = self.lstm(x)
+            out = out[:, -1, :]
+            return self.fc(out)
+
+Usage:
+    - input_dim:  embedding dimension (product + action encoded)
+    - hidden_dim: LSTM hidden state size
+    - output_dim: number of products (predict next product)
+"""
+
+import torch
+import torch.nn as nn
+
+
+class LSTMModel(nn.Module):
+    """
+    LSTM Sequence Model for next-product prediction — PDF 3.4.2
+
+    Input:  (batch_size, sequence_length, input_dim)
+    Output: (batch_size, output_dim)  — logits over all products
+    """
+
+    def __init__(self, input_dim=10, hidden_dim=64, output_dim=100):
+        super().__init__()
+        self.lstm = nn.LSTM(input_dim, hidden_dim, batch_first=True)
+        self.fc = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        out = out[:, -1, :]   # Take last timestep output
+        return self.fc(out)</code></pre>
+
+    <div class="section-divider">Part 1b — LSTM Training Loop (Chapter 3.4.3)</div>
+    <div class="file-header">
+        <span class="file-icon">🐍</span>
+        <span class="file-name">train_lstm.py</span>
+        <span class="file-path">ai-service/scripts/train_lstm.py</span>
+    </div>
+    <div class="desc">Training loop: CrossEntropyLoss + Adam optimizer + sliding window dataset</div>
+    <pre><code class="language-python">def train(sequences, meta, epochs: int = 30, batch_size: int = 64, lr: float = 0.001):
+    """
+    Train LSTM model — exactly following PDF 3.4.3
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters())
+    for epoch in range(epochs):
+        output = model(x)
+        loss = criterion(output, y)
+        loss.backward()
+        optimizer.step()
+    """
+    dataset = BehaviorSequenceDataset(sequences, meta["input_dim"])
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    # Create model (PDF 3.4.2)
+    model = LSTMModel(
+        input_dim=meta["input_dim"],
+        hidden_dim=meta["hidden_dim"],
+        output_dim=meta["n_products"],
+    )
+
+    # Training setup (PDF 3.4.3)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    # Training loop (PDF 3.4.3)
+    for epoch in range(epochs):
+        total_loss = 0.0
+        correct = 0
+        total = 0
+
+        model.train()
+        for x, y in dataloader:
+            optimizer.zero_grad()
+            output = model(x)            # PDF 3.4.3: output = model(x)
+            loss = criterion(output, y)   # PDF 3.4.3: loss = criterion(output, y)
+            loss.backward()               # PDF 3.4.3: loss.backward()
+            optimizer.step()              # PDF 3.4.3: optimizer.step()
+
+            total_loss += loss.item() * x.size(0)
+            _, predicted = torch.max(output, 1)
+            correct += (predicted == y).sum().item()
+            total += y.size(0)
+
+        avg_loss = total_loss / max(total, 1)
+        accuracy = correct / max(total, 1) * 100
+        if (epoch + 1) % 5 == 0 or epoch == 0:
+            logger.info("Epoch [%d/%d] — Loss: %.4f, Accuracy: %.2f%%",
+                        epoch + 1, epochs, avg_loss, accuracy)
+
+    return model</code></pre>
+</div>
+
+<!-- TAB 2: NEO4J GRAPH -->
+<div class="code-section" id="tab1">
+    <div class="section-divider">Part 2 — Neo4j Knowledge Graph (Chapter 3.5)</div>
+    <div class="file-header">
+        <span class="file-icon">🐍</span>
+        <span class="file-name">load_graph_data.py</span>
+        <span class="file-path">ai-service/scripts/load_graph_data.py</span>
+    </div>
+    <div class="desc">Tạo User/Product nodes và BUY/VIEW/SIMILAR edges trong Neo4j</div>
+    <pre><code class="language-python">"""
+Load Graph Data — Chapter 3.5.2
+
+Creates (PDF 3.5.1 / 3.5.2):
+    Nodes: User, Product
+    Edges: BUY, VIEW, SIMILAR
+
+Cypher examples from PDF:
+    CREATE (u:User {id:1})
+    CREATE (p:Product {id:101})
+    CREATE (u)-[:BUY]->(p)
+"""
+
+from neo4j import GraphDatabase
+
+# Action → edge type mapping (PDF 3.5.1)
+ACTION_TO_EDGE = {
+    "purchase": "BUY",
+    "view": "VIEW",
+    "click": "VIEW",
+    "search": "VIEW",
+    "add_to_cart": "VIEW",
+}
+
+
+def create_nodes_and_edges(driver, rows):
+    """Create User and Product nodes with relationship edges."""
+    user_ids = set()
+    product_ids = set()
+    for row in rows:
+        user_ids.add(str(row["user_id"]))
+        product_ids.add(str(row["product_id"]))
+
+    with driver.session() as session:
+        # Create User nodes (PDF 3.5.2: CREATE (u:User {id:1}))
+        for uid in user_ids:
+            session.run("MERGE (u:User {id: $uid})", {"uid": uid})
+
+        # Create Product nodes (PDF 3.5.2: CREATE (p:Product {id:101}))
+        for pid in product_ids:
+            session.run("MERGE (p:Product {id: $pid})", {"pid": pid})
+
+        # Create edges (PDF 3.5.2: CREATE (u)-[:BUY]->(p))
+        edge_counts = defaultdict(int)
+        for row in rows:
+            uid = str(row["user_id"])
+            pid = str(row["product_id"])
+            action = row.get("action", "view").lower().strip()
+            edge_type = ACTION_TO_EDGE.get(action, "VIEW")
+
+            query = f"""
+            MATCH (u:User {{id: $uid}})
+            MATCH (p:Product {{id: $pid}})
+            MERGE (u)-[r:{edge_type}]->(p)
+            ON CREATE SET r.count = 1, r.weight = $weight
+            ON MATCH SET r.count = r.count + 1, r.weight = r.weight + $weight
+            """
+            weight = 5.0 if edge_type == "BUY" else 1.0
+            session.run(query, {"uid": uid, "pid": pid, "weight": weight})
+
+
+def create_similar_edges(driver):
+    """Create SIMILAR edges between products — PDF 3.5.1"""
+    query = """
+    MATCH (p1:Product)<-[:BUY]-(u:User)-[:BUY]->(p2:Product)
+    WHERE p1.id < p2.id
+    WITH p1, p2, COUNT(DISTINCT u) AS shared_buyers
+    WHERE shared_buyers >= 2
+    MERGE (p1)-[r:SIMILAR]->(p2)
+    SET r.weight = shared_buyers
+    RETURN COUNT(r) AS similar_count
+    """
+    with driver.session() as session:
+        result = session.run(query).single()
+
+
+def get_graph_recommendations(user_id: str, k: int = 5) -> List[int]:
+    """
+    Get product recommendations from Knowledge Graph — PDF 3.5.3
+
+    MATCH (u:User {id:1})-[:BUY]->(p)-[:SIMILAR]->(rec)
+    RETURN rec
+    """
+    similar_query = """
+    MATCH (u:User {id: $uid})-[:BUY]->(p)-[:SIMILAR]->(rec:Product)
+    WHERE NOT (u)-[:BUY]->(rec)
+    RETURN DISTINCT rec.id AS product_id, count(*) AS score
+    ORDER BY score DESC LIMIT $k
+    """
+    results = neo4j_client.execute_read(similar_query, {"uid": str(user_id), "k": k})
+    return [int(r["product_id"]) for r in results]</code></pre>
+</div>
+
+<!-- TAB 3: RECOMMENDATION API -->
+<div class="code-section" id="tab2">
+    <div class="section-divider">Part 3 — Recommendation API (Chapter 3.7 / 3.8.1)</div>
+    <div class="file-header">
+        <span class="file-icon">🐍</span>
+        <span class="file-name">recommend.py</span>
+        <span class="file-path">ai-service/app/routers/recommend.py</span>
+    </div>
+    <div class="desc">API endpoint: GET /recommend?user_id=1 — Hybrid recommendation</div>
+    <pre><code class="language-python">"""
+Recommendation Router — Chapter 3.8.1
+
+GET /recommend?user_id=1
+
+Uses Hybrid Model (PDF 3.7):
+    final_score = w1 * lstm + w2 * graph + w3 * rag
+"""
+
+from fastapi import APIRouter, Query
+from app.services.hybrid_service import hybrid_recommend
+
+router = APIRouter(tags=["Recommendation"])
+
+
+@router.get("/recommend")
+async def recommend(
+    user_id: int = Query(..., description="ID of the user"),
+    k: int = Query(5, description="Number of recommendations"),
+    query: str = Query("", description="Optional search query for RAG scoring"),
+):
+    """
+    Get product recommendations for a user — PDF 3.8.1
+
+    Combines:
+        - LSTM sequence prediction (PDF 3.4)
+        - Knowledge Graph CF (PDF 3.5)
+        - RAG vector similarity (PDF 3.6)
+
+    Returns: list of recommended product IDs
+    """
+    recommendations = hybrid_recommend(user_id=user_id, query=query, k=k)
+    return recommendations</code></pre>
+
+    <div class="section-divider">Part 3b — Hybrid Service (Chapter 3.7)</div>
+    <div class="file-header">
+        <span class="file-icon">🐍</span>
+        <span class="file-name">hybrid_service.py</span>
+        <span class="file-path">ai-service/app/services/hybrid_service.py</span>
+    </div>
+    <div class="desc">Kết hợp 3 nguồn: LSTM + Knowledge Graph + RAG với công thức trọng số</div>
+    <pre><code class="language-python">"""
+Hybrid Service — Chapter 3.7
+
+final_score = w1 * lstm + w2 * graph + w3 * rag
+"""
+
+from app.services.lstm_service import lstm_service
+from app.services.graph_service import get_graph_scores, get_graph_recommendations
+from app.services.rag_service import rag_service
+
+# Default weights (PDF 3.7)
+W1_LSTM = 0.4
+W2_GRAPH = 0.35
+W3_RAG = 0.25
+
+
+def hybrid_recommend(user_id: int, query: str = "", k: int = 5) -> List[int]:
+    """
+    Hybrid recommendation combining LSTM + Graph + RAG — PDF 3.7
+
+    final_score = w1 * lstm + w2 * graph + w3 * rag
+    """
+    uid = str(user_id)
+
+    # 1. LSTM scores (PDF 3.4)
+    lstm_scores = lstm_service.get_scores(uid, top_k=20)
+
+    # 2. Graph scores (PDF 3.5)
+    graph_scores = get_graph_scores(uid, top_k=20)
+
+    # 3. RAG scores (PDF 3.6)
+    rag_scores = {}
+    if query:
+        rag_scores = rag_service.get_rag_scores(query, top_k=20)
+
+    # Collect all candidate product IDs
+    all_pids = set(lstm_scores.keys()) | set(graph_scores.keys()) | set(rag_scores.keys())
+
+    # Compute hybrid score (PDF 3.7)
+    final_scores = {}
+    for pid in all_pids:
+        s_lstm = lstm_scores.get(pid, 0.0)
+        s_graph = graph_scores.get(pid, 0.0)
+        s_rag = rag_scores.get(pid, 0.0)
+
+        final_scores[pid] = W1_LSTM * s_lstm + W2_GRAPH * s_graph + W3_RAG * s_rag
+
+    # Sort by final score, return top-k
+    sorted_pids = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
+    return [pid for pid, _ in sorted_pids[:k]]</code></pre>
+</div>
+
+<!-- TAB 4: CHATBOT -->
+<div class="code-section" id="tab3">
+    <div class="section-divider">Part 4 — Chatbot API (Chapter 3.8.2)</div>
+    <div class="file-header">
+        <span class="file-icon">🐍</span>
+        <span class="file-name">chatbot.py</span>
+        <span class="file-path">ai-service/app/routers/chatbot.py</span>
+    </div>
+    <div class="desc">POST /chatbot — Chatbot tư vấn sản phẩm bằng tiếng Việt</div>
+    <pre><code class="language-python">"""
+Chatbot Router — Chapter 3.8.2
+
+POST /chatbot
+
+Pipeline (PDF 3.8.2):
+    1. NLP hiểu intent
+    2. Retrieve sản phẩm
+    3. Generate response
+
+Chatbot luôn trả lời tiếng Việt.
+"""
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+from app.services.rag_service import rag_service
+
+router = APIRouter(tags=["Chatbot"])
+
+
+class ChatRequest(BaseModel):
+    """Request body for chatbot — PDF 3.8.2"""
+    message: str = Field(..., description="User message, e.g. 'tôi cần laptop giá rẻ'")
+    user_id: int | None = Field(None, description="Optional user ID for personalized response")
+
+
+class ChatResponse(BaseModel):
+    """Response from chatbot — PDF 3.8.2"""
+    reply: str = Field(..., description="Chatbot response in Vietnamese")
+    provider: str = Field("groq", description="LLM provider used (groq/template)")
+
+
+@router.post("/chatbot", response_model=ChatResponse)
+async def chatbot(req: ChatRequest):
+    """
+    Chatbot tư vấn sản phẩm — PDF 3.8.2
+
+    RAG Pipeline:
+        1. Retrieve sản phẩm liên quan (FAISS / Product API)
+        2. Get user context (Neo4j Knowledge Graph)
+        3. Generate response (Groq LLM / template)
+
+    Always responds in Vietnamese.
+    """
+    if not req.message.strip():
+        raise HTTPException(status_code=400, detail="Message is required")
+
+    result = rag_service.generate_response(
+        user_id=req.user_id,
+        message=req.message,
+    )
+
+    return ChatResponse(
+        reply=result["reply"],
+        provider=result.get("provider", "unknown"),
+    )</code></pre>
+
+    <div class="section-divider">Part 4b — RAG Service (Chapter 3.6)</div>
+    <div class="file-header">
+        <span class="file-icon">🐍</span>
+        <span class="file-name">rag_service.py</span>
+        <span class="file-path">ai-service/app/services/rag_service.py</span>
+    </div>
+    <div class="desc">RAG Pipeline: FAISS vector search → Neo4j context → Groq LLM generation</div>
+    <pre><code class="language-python">class RAGService:
+    """RAG pipeline: FAISS retrieval + Groq LLM generation."""
+
+    def retrieve_products(self, query: str, k: int = 5) -> List[dict]:
+        """Retrieve relevant products using FAISS vector search."""
+        # Strategy 1: FAISS vector search (PDF 3.6.2)
+        if self.faiss_index is not None and self.sentence_model is not None:
+            query_vector = self.sentence_model.encode([query]).astype("float32")
+            distances, indices = self.faiss_index.search(query_vector, k)
+            results = []
+            for idx in indices[0]:
+                if idx >= 0 and idx in self.product_mapping:
+                    results.append(self.product_mapping[idx])
+            if results:
+                return results
+
+        # Strategy 2: Fallback — search product-service API
+        return self._search_product_api(query, k)
+
+    def generate_response(self, user_id: int | None, message: str) -> dict:
+        """
+        Full RAG pipeline (PDF 3.6):
+        1. Retrieve relevant products (FAISS / API)
+        2. Get user context from KB Graph
+        3. Generate response using LLM (Groq)
+        """
+        # Step 1: Retrieve products
+        retrieved = self.retrieve_products(message, k=5)
+
+        # Step 2: Get user graph context
+        user_context = ""
+        if user_id:
+            ctx = get_user_context(str(user_id))
+            if ctx["purchases"]:
+                pids = [p["product_id"] for p in ctx["purchases"]]
+                names = self._get_product_names(pids)
+                items = [names.get(pid, f"SP #{pid}") for pid in pids[:5]]
+                if items:
+                    user_context = "Sản phẩm khách đã mua: " + ", ".join(items)
+
+        # Step 3: Build product context
+        product_context = ""
+        if retrieved:
+            items = []
+            for p in retrieved:
+                name = p.get("name", "")
+                price = p.get("price", 0)
+                if price:
+                    price_str = f"{int(price):,}".replace(",", ".") + " ₫"
+                    items.append(f"- {name} — {price_str}")
+            product_context = "Sản phẩm liên quan:\n" + "\n".join(items)
+
+        # Step 4: Generate with LLM
+        if self.groq_client:
+            return self._generate_with_groq(message, user_context, product_context)
+        else:
+            return self._generate_template(message, retrieved)
+
+    def _generate_with_groq(self, message, user_context, product_context) -> dict:
+        """Generate response using Groq LLM — PDF 3.6.1"""
+        system_prompt = f"""Bạn là nhân viên tư vấn bán hàng chuyên nghiệp.
+LUÔN trả lời bằng tiếng Việt.
+
+{user_context}
+
+{product_context}
+
+QUY TẮC:
+- Trả lời ngắn gọn, tự nhiên (2-4 câu).
+- Gợi ý sản phẩm cụ thể từ danh sách trên kèm giá.
+- KHÔNG bịa tên sản phẩm không có trong dữ liệu.
+"""
+        response = self.groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message},
+            ],
+            temperature=0.3,
+            max_tokens=512,
+        )
+        reply = response.choices[0].message.content
+        return {"reply": reply, "provider": "groq"}</code></pre>
+</div>
+
+<script>
+function showTab(idx) {
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+    document.querySelectorAll('.code-section').forEach((s,i) => s.classList.toggle('active', i===idx));
+}
+hljs.highlightAll();
+</script>
+</body>
+</html>

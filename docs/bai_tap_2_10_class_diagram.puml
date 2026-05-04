@@ -1,0 +1,193 @@
+@startuml EcommerceClassDiagram
+title Class Diagram - Hệ thống E-Commerce Microservices
+
+skinparam classAttributeIconSize 0
+skinparam backgroundColor #FAFAFA
+skinparam class {
+    BackgroundColor #DDEEFF
+    BorderColor #336699
+    ArrowColor #336699
+    FontName Arial
+}
+skinparam packageStyle rectangle
+skinparam package {
+    BackgroundColor #EEF6FF
+    BorderColor #336699
+}
+
+' ===========================
+' PRODUCT SERVICE
+' ===========================
+package "Product Service (PostgreSQL)" #D5E8D4 {
+
+    class Category {
+        + id : int <<PK>>
+        + name : string
+        + slug : string
+        + description : string
+        + is_active : boolean
+        + created_at : datetime
+    }
+
+    class Product {
+        + id : int <<PK>>
+        + name : string
+        + description : string
+        + price : float
+        + stock : int
+        + image_url : string
+        + is_active : boolean
+        + created_at : datetime
+        + updated_at : datetime
+        --
+        + category_id : int <<FK>>
+    }
+
+    class Book {
+        + product_id : int <<PK, FK>>
+        + author : string
+        + publisher : string
+        + isbn : string
+        + pages : int
+        + language : string
+    }
+
+    class Electronics {
+        + product_id : int <<PK, FK>>
+        + brand : string
+        + warranty : int
+        + model_number : string
+        + specifications : json
+    }
+
+    class Fashion {
+        + product_id : int <<PK, FK>>
+        + size : string
+        + color : string
+        + material : string
+        + gender : string
+    }
+
+    Product "many" --> "1" Category : belongs to
+    Book "1" --|> "1" Product : extends (OneToOne)
+    Electronics "1" --|> "1" Product : extends (OneToOne)
+    Fashion "1" --|> "1" Product : extends (OneToOne)
+}
+
+' ===========================
+' USER SERVICE
+' ===========================
+package "User Service (MySQL)" #FFF2CC {
+
+    class User {
+        + id : int <<PK>>
+        + username : string
+        + email : string
+        + password : string (hashed)
+        + first_name : string
+        + last_name : string
+        + phone : string
+        + address : string
+        + role : enum {admin, staff, customer}
+        + is_active : boolean
+        + date_joined : datetime
+    }
+
+    class Role <<enumeration>> {
+        ADMIN
+        STAFF
+        CUSTOMER
+    }
+
+    User --> Role : has
+}
+
+' ===========================
+' CART SERVICE
+' ===========================
+package "Cart Service (MySQL)" #FFE6CC {
+
+    class Cart {
+        + id : int <<PK>>
+        + user_id : int
+        + created_at : datetime
+        + updated_at : datetime
+    }
+
+    class CartItem {
+        + id : int <<PK>>
+        + product_id : int
+        + quantity : int
+        + added_at : datetime
+        --
+        + cart_id : int <<FK>>
+    }
+
+    Cart "1" *-- "many" CartItem : contains
+}
+
+' ===========================
+' ORDER SERVICE
+' ===========================
+package "Order Service (MySQL)" #F8CECC {
+
+    class Order {
+        + id : int <<PK>>
+        + user_id : int
+        + total_price : float
+        + status : string
+        + created_at : datetime
+    }
+
+    class OrderItem {
+        + id : int <<PK>>
+        + product_id : int
+        + quantity : int
+        --
+        + order_id : int <<FK>>
+    }
+
+    Order "1" *-- "many" OrderItem : contains
+}
+
+' ===========================
+' PAYMENT SERVICE
+' ===========================
+package "Payment Service (PostgreSQL)" #E1D5E7 {
+
+    class Payment {
+        + id : int <<PK>>
+        + order_id : int
+        + amount : float
+        + status : string
+        + created_at : datetime
+    }
+}
+
+' ===========================
+' SHIPPING SERVICE
+' ===========================
+package "Shipping Service (MySQL)" #DAE8FC {
+
+    class Shipment {
+        + id : int <<PK>>
+        + order_id : int
+        + address : string
+        + status : string
+        + created_at : datetime
+    }
+}
+
+' ===========================
+' CROSS-SERVICE RELATIONSHIPS (logical)
+' ===========================
+Cart ..> User : user_id (logical ref)
+Order ..> User : user_id (logical ref)
+CartItem ..> Product : product_id (logical ref)
+OrderItem ..> Product : product_id (logical ref)
+Payment ..> Order : order_id (logical ref)
+Shipment ..> Order : order_id (logical ref)
+
+note "Microservices không share DB.\nCác mũi tên đứt nét thể hiện\ntham chiếu logic qua API." as N1
+
+@enduml

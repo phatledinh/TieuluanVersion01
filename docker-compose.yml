@@ -1,0 +1,355 @@
+# ============================================
+# Docker Compose — E-Commerce Microservices
+# Chapter 4.6.2
+# ============================================
+version: '3.8'
+
+services:
+  # ──────────────────────────────────────────
+  # Databases
+  # ──────────────────────────────────────────
+
+  # ---- MySQL (User Service) ----
+  user-db:
+    image: mysql:8.0
+    container_name: user-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: userdb
+      MYSQL_USER: userapp
+      MYSQL_PASSWORD: userapp123
+    ports:
+      - "3310:3306"
+    volumes:
+      - user-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecom-net
+
+  # ---- PostgreSQL (Product Service — Chapter 2.10.4) ----
+  product-db:
+    image: postgres:15
+    container_name: product-db
+    environment:
+      POSTGRES_DB: productdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecom-net
+
+  # ---- Neo4j (Knowledge Graph — Chapter 3.5) ----
+  neo4j:
+    image: neo4j:5-community
+    container_name: neo4j
+    environment:
+      NEO4J_AUTH: neo4j/password123
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p password123 'RETURN 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - ecom-net
+
+  # ──────────────────────────────────────────
+  # Application Services
+  # ──────────────────────────────────────────
+
+  # ---- User Service (Django + MySQL) ----
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SECRET_KEY=dev-secret-key-change-in-prod
+      - DJANGO_DEBUG=True
+      - DB_NAME=userdb
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=user-db
+      - DB_PORT=3306
+      # JWT signing key — shared across services for token verification
+      - JWT_SIGNING_KEY=django-insecure-user-service-dev-key-change-in-production
+    depends_on:
+      user-db:
+        condition: service_healthy
+    networks:
+      - ecom-net
+
+  # ---- Product Service (Django + PostgreSQL) — Chapter 2.3 ----
+  product-service:
+    build: ./product-service
+    container_name: product-service
+    ports:
+      - "8001:8001"
+    environment:
+      - DJANGO_SECRET_KEY=dev-secret-key-product-change-in-prod
+      - DJANGO_DEBUG=True
+      - DB_NAME=productdb
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=product-db
+      - DB_PORT=5432
+      # JWT signing key — must match user-service for token verification
+      - JWT_SIGNING_KEY=django-insecure-user-service-dev-key-change-in-production
+    depends_on:
+      product-db:
+        condition: service_healthy
+    networks:
+      - ecom-net
+
+  # ---- AI Service (FastAPI + PyTorch) — Chapter 3.9 ----
+  ai-service:
+    build: ./ai-service
+    container_name: ai-service
+    ports:
+      - "8002:8002"
+    environment:
+      # Neo4j Knowledge Graph (Chapter 3.5)
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=password123
+      # Product Service (inter-service REST — Chapter 4.5.1)
+      - PRODUCT_SERVICE_URL=http://product-service:8001
+      # LLM Provider — Groq (Chapter 3.6)
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      # Model paths
+      - LSTM_MODEL_PATH=trained_models/lstm_model.pt
+      - LSTM_META_PATH=trained_models/lstm_meta.json
+      - FAISS_INDEX_PATH=trained_models/product_index.faiss
+      - FAISS_MAPPING_PATH=trained_models/product_mapping.json
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - ecom-net
+
+  # ---- Cart Database (MySQL) ----
+  cart-db:
+    image: mysql:8.0
+    container_name: cart-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cartdb
+      MYSQL_USER: cartapp
+      MYSQL_PASSWORD: cartapp123
+    ports:
+      - "3311:3306"
+    volumes:
+      - cart-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecom-net
+
+  # ---- Cart Service (Django + MySQL) ----
+  cart-service:
+    build: ./cart-service
+    container_name: cart-service
+    ports:
+      - "8003:8003"
+    environment:
+      - DJANGO_SECRET_KEY=dev-secret-key-cart-change-in-prod
+      - DJANGO_DEBUG=True
+      - DB_NAME=cartdb
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=cart-db
+      - DB_PORT=3306
+      # JWT signing key — must match user-service for token verification
+      - JWT_SIGNING_KEY=django-insecure-user-service-dev-key-change-in-production
+    depends_on:
+      cart-db:
+        condition: service_healthy
+    networks:
+      - ecom-net
+
+  # ---- Order Database (MySQL) ----
+  order-db:
+    image: mysql:8.0
+    container_name: order-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: orderdb
+      MYSQL_USER: orderapp
+      MYSQL_PASSWORD: orderapp123
+    ports:
+      - "3312:3306"
+    volumes:
+      - order-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecom-net
+
+  # ---- Order Service (Django + MySQL) ----
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    ports:
+      - "8004:8004"
+    environment:
+      - DJANGO_SECRET_KEY=dev-secret-key-order-change-in-prod
+      - DJANGO_DEBUG=True
+      - DB_NAME=orderdb
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=order-db
+      - DB_PORT=3306
+      - JWT_SIGNING_KEY=django-insecure-user-service-dev-key-change-in-production
+      - CART_SERVICE_URL=http://cart-service:8003
+      - PAYMENT_SERVICE_URL=http://payment-service:8005
+      - PRODUCT_SERVICE_URL=http://product-service:8001
+    depends_on:
+      order-db:
+        condition: service_healthy
+    networks:
+      - ecom-net
+
+  # ---- Payment Database (PostgreSQL) ----
+  payment-db:
+    image: postgres:15
+    container_name: payment-db
+    environment:
+      POSTGRES_DB: paymentdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - payment-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecom-net
+
+  # ---- Payment Service (Django + PostgreSQL) ----
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "8005:8005"
+    environment:
+      - DJANGO_SECRET_KEY=dev-secret-key-payment-change-in-prod
+      - DJANGO_DEBUG=True
+      - DB_NAME=paymentdb
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=payment-db
+      - DB_PORT=5432
+      - JWT_SIGNING_KEY=django-insecure-user-service-dev-key-change-in-production
+      - SHIPPING_SERVICE_URL=http://shipping-service:8006
+    depends_on:
+      payment-db:
+        condition: service_healthy
+    networks:
+      - ecom-net
+
+  # ---- Shipping Database (MySQL) ----
+  shipping-db:
+    image: mysql:8.0
+    container_name: shipping-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: shippingdb
+      MYSQL_USER: shippingapp
+      MYSQL_PASSWORD: shippingapp123
+    ports:
+      - "3313:3306"
+    volumes:
+      - shipping-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecom-net
+
+  # ---- Shipping Service (Django + MySQL) ----
+  shipping-service:
+    build: ./shipping-service
+    container_name: shipping-service
+    ports:
+      - "8006:8006"
+    environment:
+      - DJANGO_SECRET_KEY=dev-secret-key-shipping-change-in-prod
+      - DJANGO_DEBUG=True
+      - DB_NAME=shippingdb
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=shipping-db
+      - DB_PORT=3306
+      - JWT_SIGNING_KEY=django-insecure-user-service-dev-key-change-in-production
+    depends_on:
+      shipping-db:
+        condition: service_healthy
+    networks:
+      - ecom-net
+
+  # ---- Frontend Web UI ----
+  frontend:
+    build: ./frontend
+    container_name: frontend-ui
+    ports:
+      - "3000:80"
+    networks:
+      - ecom-net
+
+  # ---- API Gateway (Nginx) ----
+  gateway:
+    build: ./gateway
+    container_name: api-gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - user-service
+      - product-service
+      - ai-service
+      - cart-service
+      - order-service
+      - payment-service
+      - shipping-service
+    networks:
+      - ecom-net
+
+volumes:
+  user-db-data:
+  product-db-data:
+  neo4j-data:
+  cart-db-data:
+  order-db-data:
+  payment-db-data:
+  shipping-db-data:
+
+networks:
+  ecom-net:
+    driver: bridge

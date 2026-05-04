@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | AI E-Commerce</title>
+    <!-- Use main CSS -->
+  </head>
+  <body>
+    <header>
+      <div class="container nav-container">
+        <a href="/" class="logo">AI-Store.</a>
+        <nav class="nav-links">
+          <a href="/">Catalog</a>
+          <a href="/login.html" class="active">Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container auth-container">
+      <div class="auth-card glass glass-panel animate-fade-in">
+        <h2>Welcome Back</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" class="input-control" required placeholder="Enter your username">
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" class="input-control" required placeholder="Enter your password">
+          </div>
+          <div id="login-error" style="color: var(--danger); font-size: 0.875rem; margin-bottom: 1rem; display: none;"></div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="login-btn">
+            Sign In
+          </button>
+        </form>
+        <div class="auth-switch">
+          Don't have an account? <a href="#">Register here</a>
+        </div>
+      </div>
+    </main>
+
+    <script type="module">
+      import './src/style.css';
+      
+      const API_BASE_URL = 'http://localhost';
+      const loginForm = document.getElementById('login-form');
+      const loginError = document.getElementById('login-error');
+      const loginBtn = document.getElementById('login-btn');
+
+      // If already logged in, redirect
+      if (localStorage.getItem('jwt_token')) {
+        window.location.href = '/';
+      }
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        loginBtn.textContent = 'Signing in...';
+        loginBtn.disabled = true;
+        loginError.style.display = 'none';
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/users/login/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && (data.token || data.access)) {
+            // Save token
+            localStorage.setItem('jwt_token', data.token || data.access);
+            window.location.href = '/';
+          } else {
+            throw new Error(data.detail || data.message || 'Invalid credentials');
+          }
+        } catch (err) {
+          loginError.textContent = err.message;
+          loginError.style.display = 'block';
+          loginBtn.textContent = 'Sign In';
+          loginBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
