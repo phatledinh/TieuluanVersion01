@@ -34,7 +34,7 @@ def get_graph_recommendations(user_id: str, k: int = 5) -> List[int]:
     """
     # Strategy 1: SIMILAR edges (PDF 3.5.3)
     similar_query = """
-    MATCH (u:User {id: $uid})-[:BUY]->(p)-[:SIMILAR]->(rec:Product)
+    MATCH (u:User {id: $uid})-[:BUY|ADD_TO_CART]->(p)-[:SIMILAR]->(rec:Product)
     WHERE NOT (u)-[:BUY]->(rec)
     RETURN DISTINCT rec.id AS product_id, count(*) AS score
     ORDER BY score DESC LIMIT $k
@@ -46,8 +46,8 @@ def get_graph_recommendations(user_id: str, k: int = 5) -> List[int]:
 
     # Strategy 2: Collaborative Filtering — users who bought same products
     cf_query = """
-    MATCH (u:User {id: $uid})-[:BUY]->(p:Product)<-[:BUY]-(other:User)
-    MATCH (other)-[:BUY]->(rec:Product)
+    MATCH (u:User {id: $uid})-[:BUY|ADD_TO_CART]->(p:Product)<-[:BUY|ADD_TO_CART]-(other:User)
+    MATCH (other)-[:BUY|ADD_TO_CART]->(rec:Product)
     WHERE NOT (u)-[:BUY]->(rec) AND rec.id <> p.id
     RETURN rec.id AS product_id, COUNT(DISTINCT other) AS shared_users
     ORDER BY shared_users DESC LIMIT $k
@@ -59,7 +59,7 @@ def get_graph_recommendations(user_id: str, k: int = 5) -> List[int]:
 
     # Strategy 3: Popular products fallback
     popular_query = """
-    MATCH ()-[r:BUY]->(p:Product)
+    MATCH ()-[r:BUY|ADD_TO_CART]->(p:Product)
     RETURN p.id AS product_id, COUNT(r) AS buy_count
     ORDER BY buy_count DESC LIMIT $k
     """
@@ -73,8 +73,8 @@ def get_graph_scores(user_id: str, top_k: int = 20) -> Dict[int, float]:
     Score based on how many shared users recommend the product.
     """
     cf_query = """
-    MATCH (u:User {id: $uid})-[:BUY]->(p:Product)<-[:BUY]-(other:User)
-    MATCH (other)-[r:BUY]->(rec:Product)
+    MATCH (u:User {id: $uid})-[:BUY|ADD_TO_CART]->(p:Product)<-[:BUY|ADD_TO_CART]-(other:User)
+    MATCH (other)-[r:BUY|ADD_TO_CART]->(rec:Product)
     WHERE NOT (u)-[:BUY]->(rec)
     RETURN rec.id AS product_id,
            COUNT(DISTINCT other) AS shared_users,
@@ -97,7 +97,7 @@ def get_user_context(user_id: str, limit: int = 10) -> dict:
     """Get user's full context from graph for RAG pipeline."""
     # Purchases
     purchases = neo4j_client.execute_read(
-        """MATCH (u:User {id: $uid})-[r:BUY]->(p:Product)
+        """MATCH (u:User {id: $uid})-[r:BUY|ADD_TO_CART]->(p:Product)
         RETURN p.id AS product_id, r.count AS times
         ORDER BY r.weight DESC LIMIT $limit""",
         {"uid": str(user_id), "limit": limit},

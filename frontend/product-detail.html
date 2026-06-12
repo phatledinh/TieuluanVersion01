@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chi tiết sản phẩm | ShopAI</title>
+  </head>
+  <body>
+    <header>
+      <div class="container nav-container">
+        <a href="/" class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: var(--primary-color); vertical-align: middle; margin-right: 4px; margin-bottom: 4px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          ShopAI
+        </a>
+        <nav class="nav-links">
+          <a href="/" id="nav-home">Trang chủ</a>
+          <a href="/" id="nav-catalog">Danh mục <span style="font-size: 0.8rem;">▼</span></a>
+        </nav>
+        <div class="nav-user">
+          <a href="/cart.html" style="text-decoration: none; color: inherit;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+            <span style="font-size: 0.85rem; margin-left: 4px;">Đơn hàng</span>
+            <span id="cart-count" style="background: var(--primary-color); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; position: relative; top: -10px; right: 5px;">0</span>
+          </a>
+          <span style="margin: 0 10px; font-size: 0.85rem;" id="nav-username">user_1</span>
+          <a href="/login.html" id="auth-link" style="color: var(--danger); font-size: 0.85rem; text-decoration: none;">Đăng xuất</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="container" id="product-detail-view" style="padding-top: 2rem; padding-bottom: 5rem;">
+        <div style="text-align: center; padding: 3rem;">
+           <div class="loading-spinner" style="margin: 0 auto;"></div>
+           <p style="margin-top: 1rem; color: var(--text-muted);">Đang tải thông tin sản phẩm...</p>
+        </div>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

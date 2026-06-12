@@ -17,15 +17,18 @@ def get_cart_items(user_id, token):
         logger.error(f"Error fetching cart items: {e}")
         return None
 
-def clear_cart(token):
+def clear_cart(token, cart_items):
     headers = {'Authorization': f'Bearer {token}'}
-    try:
-        response = requests.delete(f'{CART_SERVICE_URL}/cart/remove', headers=headers, timeout=5)
-        response.raise_for_status()
-        return True
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error clearing cart: {e}")
-        return False
+    success = True
+    for item in cart_items:
+        payload = {'product_id': item.get('product_id')}
+        try:
+            response = requests.delete(f'{CART_SERVICE_URL}/cart/remove/', json=payload, headers=headers, timeout=5)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error clearing cart item {item.get('product_id')}: {e}")
+            success = False
+    return success
 
 def initiate_payment(order_id, amount, token):
     headers = {'Authorization': f'Bearer {token}'}

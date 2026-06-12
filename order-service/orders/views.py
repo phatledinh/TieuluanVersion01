@@ -77,13 +77,9 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
 
         # 5. Clear Cart
-        clear_cart(token)
+        clear_cart(token, cart_items)
 
-        # 6. Initiate Payment
-        payment_data = initiate_payment(order.id, total_price, token)
-        if payment_data and payment_data.get('status') == 'Success':
-             order.status = 'Paid'
-             order.save()
+        # 6. (Removed) Payment will be orchestrated by the frontend
         
         serializer = self.get_serializer(order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

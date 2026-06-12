@@ -29,10 +29,14 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
 
     # ── Model Paths ──
-    LSTM_MODEL_PATH: str = "trained_models/lstm_model.pt"
-    LSTM_META_PATH: str = "trained_models/lstm_meta.json"
     FAISS_INDEX_PATH: str = "trained_models/product_index.faiss"
     FAISS_MAPPING_PATH: str = "trained_models/product_mapping.json"
+
+    # ── Sequence Model Selection (Chapter 3 Experiment) ──
+    # SimpleRNN được chọn sau thực nghiệm compare_models.py:
+    #   Avg NDCG@5 cao nhất (35.51%) trên 3 dataset thật
+    # Path tới trained model (chứa model.pt + meta.json)
+    SEQUENCE_MODEL_DIR: str = "trained_models/simplernn_rees46_electronics"
 
     class Config:
         env_file = ".env"

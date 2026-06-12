@@ -8,80 +8,126 @@
   <body>
     <header>
       <div class="container nav-container">
-        <a href="/" class="logo">AI-Store.</a>
+        <a href="/" class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: var(--primary-color); vertical-align: middle; margin-right: 4px; margin-bottom: 4px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          ShopAI
+        </a>
         <nav class="nav-links">
-          <a href="/">Catalog</a>
-          <a href="/cart.html">Cart <span id="cart-count"></span></a>
-          <a href="/login.html" id="auth-link">Login</a>
+          <a href="/" id="nav-home">Trang chủ</a>
+          <a href="/" id="nav-catalog">Danh mục <span style="font-size: 0.8rem;">▼</span></a>
         </nav>
+        <div class="nav-user">
+          <a href="/cart.html" style="text-decoration: none; color: inherit;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+            <span style="font-size: 0.85rem; margin-left: 4px;">Đơn hàng</span>
+            <span id="cart-count" style="background: var(--primary-color); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; position: relative; top: -10px; right: 5px;">0</span>
+          </a>
+          <span style="margin: 0 10px; font-size: 0.85rem;" id="nav-username">user_1</span>
+          <a href="/login.html" id="auth-link" style="color: var(--danger); font-size: 0.85rem; text-decoration: none;">Đăng xuất</a>
+        </div>
       </div>
     </header>
 
-    <main class="container" style="padding-top: 3rem; padding-bottom: 5rem; max-width: 800px;">
-      <h1 class="animate-fade-in" style="text-align: center;">Secure Checkout</h1>
+    <main class="container" style="padding-top: 3rem; padding-bottom: 5rem; max-width: 1100px;">
+      <h1 class="animate-fade-in" style="text-align: center; margin-bottom: 2rem;">Thanh Toán Đơn Hàng</h1>
       
-      <div class="glass glass-panel animate-fade-in" style="animation-delay: 0.1s; margin-top: 2rem;">
+      <!-- Main Checkout Layout -->
+      <div id="checkout-container" class="animate-fade-in" style="display: grid; grid-template-columns: 1fr 400px; gap: 2.5rem; animation-delay: 0.1s;">
         
-        <!-- Step 1: Shipping (Order Creation) -->
-        <div id="step-shipping">
-          <h2 style="border-bottom: 1px solid var(--surface-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">1. Shipping Details</h2>
-          <form id="shipping-form">
-            <div class="form-group">
-              <label for="fullName">Full Name</label>
-              <input type="text" id="fullName" class="input-control" required placeholder="John Doe">
-            </div>
-            <div class="form-group">
-              <label for="address">Shipping Address</label>
-              <input type="text" id="address" class="input-control" required placeholder="123 Main St, City, Country">
-            </div>
-            <div class="form-group">
-              <label for="phone">Phone Number</label>
-              <input type="tel" id="phone" class="input-control" required placeholder="+1 234 567 8900">
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" id="continue-btn">Continue to Payment</button>
-          </form>
-        </div>
-
-        <!-- Step 2: Payment (Mock) -->
-        <div id="step-payment" style="display: none;">
-          <h2 style="border-bottom: 1px solid var(--surface-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">2. Payment Method</h2>
-          
-          <div class="mock-card">
-            <div class="card-chip"></div>
-            <div style="margin-top: 2rem; font-size: 1.25rem; letter-spacing: 2px;">**** **** **** 4242</div>
-            <div style="display: flex; justify-content: space-between; margin-top: 1.5rem; color: rgba(255,255,255,0.7); font-size: 0.875rem;">
-              <span>CARD HOLDER</span>
-              <span>EXPIRES</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span id="display-name">JOHN DOE</span>
-              <span>12/25</span>
-            </div>
+        <!-- Left Column: Steps -->
+        <div class="glass glass-panel" style="padding: 2.5rem;">
+          <!-- Step 1: Shipping (Order Creation) -->
+          <div id="step-shipping">
+            <h2 style="border-bottom: 1px solid var(--surface-border); padding-bottom: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+              <span style="background: var(--primary-color); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">1</span>
+              Thông tin giao hàng
+            </h2>
+            <form id="shipping-form">
+              <div class="form-group">
+                <label for="fullName">Họ và tên</label>
+                <input type="text" id="fullName" class="input-control" required placeholder="Nguyễn Văn A">
+              </div>
+              <div class="form-group">
+                <label for="address">Địa chỉ nhận hàng</label>
+                <input type="text" id="address" class="input-control" required placeholder="123 Lê Lợi, Q1, TP.HCM">
+              </div>
+              <div class="form-group">
+                <label for="phone">Số điện thoại</label>
+                <input type="tel" id="phone" class="input-control" required placeholder="0901234567">
+              </div>
+              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" id="continue-btn">Tiếp tục thanh toán</button>
+            </form>
           </div>
 
-          <form id="payment-form" style="margin-top: 2rem;">
-            <div class="form-group">
-              <label for="cardNumber">Card Number (Mock)</label>
-              <input type="text" id="cardNumber" class="input-control" value="4242 4242 4242 4242" disabled>
+          <!-- Step 2: Payment -->
+          <div id="step-payment" style="display: none;">
+            <h2 style="border-bottom: 1px solid var(--surface-border); padding-bottom: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+              <span style="background: var(--primary-color); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">2</span>
+              Thanh toán
+            </h2>
+            
+            <div class="mock-card">
+              <div class="card-chip"></div>
+              <div style="margin-top: 2rem; font-size: 1.25rem; letter-spacing: 2px;">**** **** **** 4242</div>
+              <div style="display: flex; justify-content: space-between; margin-top: 1.5rem; color: rgba(255,255,255,0.7); font-size: 0.875rem;">
+                <span>CHỦ THẺ</span>
+                <span>HẾT HẠN</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span id="display-name">NGUYEN VAN A</span>
+                <span>12/25</span>
+              </div>
             </div>
-            <div id="payment-error" style="color: var(--danger); margin-bottom: 1rem; display: none;"></div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, var(--success), #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);" id="pay-btn">
-              Pay Now & Complete Order
-            </button>
-          </form>
-        </div>
 
-        <!-- Step 3: Success -->
-        <div id="step-success" style="display: none; text-align: center; padding: 2rem 0;">
-          <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.2); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <form id="payment-form" style="margin-top: 2rem;">
+              <div class="form-group">
+                <label for="cardNumber">Số thẻ (Mock)</label>
+                <input type="text" id="cardNumber" class="input-control" value="4242 4242 4242 4242" disabled>
+              </div>
+              <div id="payment-error" style="color: var(--danger); margin-bottom: 1rem; display: none;"></div>
+              <button type="submit" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, var(--success), #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);" id="pay-btn">
+                Thanh toán & Đặt hàng
+              </button>
+            </form>
           </div>
-          <h2 style="color: var(--success);">Payment Successful!</h2>
-          <p style="margin-bottom: 2rem;">Your order <strong id="success-order-id"></strong> has been placed and is being processed.</p>
-          <a href="/" class="btn btn-primary">Return to Catalog</a>
-        </div>
 
+          <!-- Step 3: Success -->
+          <div id="step-success" style="display: none; text-align: center; padding: 2rem 0;">
+            <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.2); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <h2 style="color: var(--success);">Đặt hàng thành công!</h2>
+            <p style="margin-bottom: 2rem;">Đơn hàng <strong id="success-order-id"></strong> của bạn đã được thanh toán và đang được vận chuyển.</p>
+            <a href="/" class="btn btn-primary">Quay lại trang chủ</a>
+          </div>
+        </div>
+        
+        <!-- Right Column: Order Summary -->
+        <div id="checkout-sidebar" class="glass glass-panel" style="padding: 2rem; height: fit-content; position: sticky; top: 100px;">
+          <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.75rem; display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+            Thông tin đơn hàng
+          </h3>
+          <div id="checkout-order-items" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem; padding-right: 10px;">
+            <div class="loading-spinner" style="margin: 2rem auto;"></div>
+          </div>
+          <div style="border-top: 1px solid var(--surface-border); padding-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; color: var(--text-muted); font-size: 0.95rem;">
+              <span>Tạm tính</span>
+              <span id="checkout-subtotal">0 ₫</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.2rem; color: var(--text-muted); font-size: 0.95rem;">
+              <span>Thuế (10%)</span>
+              <span id="checkout-tax">0 ₫</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.3rem; color: var(--primary-color);">
+              <span>Tổng cộng</span>
+              <span id="checkout-total">0 ₫</span>
+            </div>
+          </div>
+        </div>
       </div>
+
     </main>
 
     <script type="module" src="/src/main.js"></script>

@@ -22,13 +22,7 @@ def pay(request):
         status='Success' # Mocking successful payment
     )
     
-    # 2. If Success, call shipping service
-    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-    if auth_header.startswith('Bearer '):
-        token = auth_header.split(' ')[1]
-        
-        # Initiate shipping in the background (synchronous call for now as per requirements)
-        initiate_shipping(order_id, token)
+    # 2. (Removed) Shipping will be orchestrated by the frontend
 
     serializer = PaymentSerializer(payment)
     return Response(serializer.data, status=status.HTTP_200_OK)

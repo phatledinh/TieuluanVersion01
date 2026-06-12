@@ -7,7 +7,8 @@ Records user behavior into Neo4j Knowledge Graph.
 User Behavior Data fields (PDF 3.3.1):
     - user_id
     - product_id
-    - action (view, click, add_to_cart, purchase, search)
+    - action (search, view_list, view_detail, add_to_wishlist,
+              add_to_cart, remove_from_cart, checkout_start, purchase)
     - timestamp
 """
 
@@ -26,17 +27,33 @@ class BehaviorRequest(BaseModel):
     """Request body for tracking user behavior — PDF 3.3.1"""
     user_id: int = Field(..., description="ID of the user")
     product_id: int = Field(..., description="ID of the product")
-    action: str = Field(..., description="Action type: view, click, add_to_cart, purchase, search")
+    action: str = Field(..., description="Action type: search, view_list, view_detail, "
+                        "add_to_wishlist, add_to_cart, remove_from_cart, checkout_start, purchase")
     timestamp: str | None = Field(None, description="Event timestamp (ISO format)")
 
 
-# Action weight mapping for graph edges
+# Action weight mapping — thống nhất với generate_behavior_500x50.py
 ACTION_WEIGHTS = {
-    "view": 1.0,
-    "click": 2.0,
-    "search": 2.5,
-    "add_to_cart": 3.0,
-    "purchase": 5.0,
+    "search":           2.5,
+    "view_list":        1.0,
+    "view_detail":      2.0,
+    "add_to_wishlist":  2.5,
+    "add_to_cart":      3.0,
+    "remove_from_cart": 0.5,
+    "checkout_start":   4.0,
+    "purchase":         5.0,
+}
+
+# Action → Neo4j edge type mapping (PDF 3.5.1: BUY, VIEW, ADD_TO_CART)
+ACTION_TO_EDGE = {
+    "search":           "VIEW",
+    "view_list":        "VIEW",
+    "view_detail":      "VIEW",
+    "add_to_wishlist":  "VIEW",
+    "add_to_cart":      "ADD_TO_CART",
+    "remove_from_cart": "ADD_TO_CART",
+    "checkout_start":   "ADD_TO_CART",
+    "purchase":         "BUY",
 }
 
 
@@ -48,7 +65,7 @@ async def track_behavior(req: BehaviorRequest):
     Creates/updates:
         - User node
         - Product node
-        - Relationship edge with action type and weight
+        - Relationship edge with action type, weight, and original action
     """
     action = req.action.lower().strip()
     if action not in ACTION_WEIGHTS:
@@ -56,11 +73,10 @@ async def track_behavior(req: BehaviorRequest):
 
     event_ts = req.timestamp or datetime.utcnow().isoformat()
     weight = ACTION_WEIGHTS[action]
-
-    # Determine edge type based on action (PDF 3.5.1: BUY, VIEW)
-    edge_type = "BUY" if action == "purchase" else "VIEW"
+    edge_type = ACTION_TO_EDGE[action]
 
     # MERGE nodes and relationship (PDF 3.5.2)
+    # Lưu original action vào r.action để LSTM inference dùng
     query = """
     MERGE (u:User {id: $user_id})
     MERGE (p:Product {id: $product_id})
@@ -74,7 +90,8 @@ async def track_behavior(req: BehaviorRequest):
     ON MATCH SET
         r.count = r.count + 1,
         r.last_ts = $event_ts,
-        r.weight = r.weight + $weight
+        r.weight = r.weight + $weight,
+        r.action = $action
     """ % edge_type
 
     try:
@@ -85,8 +102,10 @@ async def track_behavior(req: BehaviorRequest):
             "weight": weight,
             "event_ts": event_ts,
         })
-        logger.info("Tracked: user=%s product=%s action=%s", req.user_id, req.product_id, action)
+        logger.info("Tracked: user=%s product=%s action=%s edge=%s",
+                     req.user_id, req.product_id, action, edge_type)
         return {"status": "Behavior tracked successfully"}
     except Exception as e:
         logger.error("Failed to track behavior: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+

@@ -1,1 +1,21 @@
 .env
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Data and Models
+ai-service/data/
+ai-service/experiment_results/
+ai-service/trained_models/
+csv_exports/
+extracted_images/
+*.csv
+*.json
+!package.json
+!package-lock.json
+
+# Text files used for output
+*.txt
+!requirements.txt
+!CMakeLists.txt

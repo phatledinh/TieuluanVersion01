@@ -1,18 +1,3 @@
-"""
-RAG Service — Chapter 3.6
-
-Retrieval-Augmented Generation pipeline:
-    1. Retrieve: tìm sản phẩm liên quan từ vector DB (FAISS) — PDF 3.6.1
-    2. Generate: sinh câu trả lời bằng LLM (Groq) — PDF 3.6.1
-
-Vector Database: FAISS (PDF 3.6.2)
-Embedding: SentenceTransformers — mô tả sản phẩm
-
-Example (PDF 3.6.3):
-    query = "laptop gaming"
-    results = vector_db.search(query)
-    response = LLM.generate(results)
-"""
 
 import json
 import logging

@@ -1,63 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI E-Commerce | Mua sắm thông minh</title>
-  </head>
-  <body>
-    <header>
-      <div class="container nav-container">
-        <a href="/" class="logo">AI-Store.</a>
-        <nav class="nav-links">
-          <a href="/" class="active">Catalog</a>
-          <a href="/cart.html">Cart <span id="cart-count"></span></a>
-          <a href="/login.html" id="auth-link">Login</a>
-        </nav>
-      </div>
-    </header>
 
-    <main class="container" style="padding-top: 3rem; padding-bottom: 5rem;">
-      <section class="hero" style="text-align: center; margin-bottom: 4rem;">
-        <h1 class="animate-fade-in">Khám Phá Mua Sắm Thông Minh</h1>
-        <p class="animate-fade-in" style="animation-delay: 0.1s;">Hệ thống gợi ý sản phẩm thông minh bằng AI — Graph RAG & Deep Learning</p>
-      </section>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopAI | Mua sắm thông minh</title>
+</head>
 
-      <section class="catalog glass glass-panel animate-fade-in" style="animation-delay: 0.2s;">
-        <h2>Sản Phẩm Nổi Bật</h2>
-        <div id="product-grid" class="product-grid">
-          <!-- Products will be injected here via JS -->
-          <div style="text-align: center; grid-column: 1 / -1; padding: 2rem;">
-            <div class="loading-spinner" style="margin: 0 auto;"></div>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- AI Chatbot Widget -->
-    <div class="chatbot-widget">
-      <div class="chatbot-window glass" id="chatbot-window">
-        <div class="chat-header">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-          <h3>Trợ Lý AI</h3>
-          <span class="chat-status">Luôn sẵn sàng hỗ trợ bạn</span>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-          <div class="message bot">Xin chào! 👋 Tôi là trợ lý mua sắm AI của cửa hàng. Bạn muốn tìm sản phẩm gì hôm nay? Hãy mô tả nhu cầu, tôi sẽ gợi ý cho bạn nhé!</div>
-        </div>
-        <form class="chat-input-area" id="chat-form">
-          <input type="text" id="chat-input" class="chat-input" placeholder="Nhập tin nhắn của bạn..." autocomplete="off">
-          <button type="submit" class="chat-send">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-          </button>
-        </form>
-      </div>
-      <div class="chatbot-toggle" id="chatbot-toggle">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+<body>
+  <header>
+    <div class="container nav-container">
+      <a href="/" class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"
+          style="color: var(--primary-color); vertical-align: middle; margin-right: 4px; margin-bottom: 4px;">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+        </svg>
+        ShopAI
+      </a>
+      <nav class="nav-links">
+        <a href="#" class="active" id="nav-home">Trang chủ</a>
+        <a href="#" id="nav-chat">💬 Chat AI</a>
+      </nav>
+      <div class="nav-user">
+        <a href="/cart.html" style="text-decoration: none; color: inherit;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span style="font-size: 0.85rem; margin-left: 4px;">Đơn hàng</span>
+          <span id="cart-count"
+            style="background: var(--primary-color); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; position: relative; top: -10px; right: 5px;">0</span>
+        </a>
+        <span style="margin: 0 10px; font-size: 0.85rem;" id="nav-username">user_1</span>
+        <a href="/login.html" id="auth-link"
+          style="color: var(--danger); font-size: 0.85rem; text-decoration: none;">Đăng xuất</a>
       </div>
     </div>
+  </header>
 
-    <script type="module" src="/src/main.js"></script>
-  </body>
+  <main class="container" id="main-view" style="padding-top: 2rem; padding-bottom: 5rem;">
+    <!-- Search Bar -->
+    <section class="search-section animate-fade-in" style="margin-bottom: 1.5rem; max-width: 100%;">
+      <form id="search-form" class="search-form glass"
+        style="display: flex; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.4rem; box-shadow: none;">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 10px;">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="search-input" class="search-input" placeholder="Tìm kiếm sản phẩm..." autocomplete="off"
+          style="flex: 1; border: none; padding: 0.5rem 1rem; outline: none; background: transparent;">
+        <button type="submit" class="btn btn-primary search-btn" style="border-radius: 8px; padding: 0.6rem 1.5rem;">Tìm
+          kiếm</button>
+      </form>
+    </section>
+
+    <!-- Category Pills -->
+    <section id="category-pills-container" class="category-pills animate-fade-in"
+      style="margin-bottom: 2rem; display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px;">
+      <button class="pill active">Tất cả</button>
+    </section>
+
+    <!-- AI Recommendations under Search -->
+    <section id="search-recommendations" class="recommendations-section animate-fade-in"
+      style="margin-bottom: 2.5rem; display: none;">
+      <div class="section-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2">
+          <polygon
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+          </polygon>
+        </svg>
+        <h3 style="margin: 0; font-size: 1.2rem;">Gợi ý cho bạn</h3>
+      </div>
+      <!-- Scrollable container -->
+      <div class="carousel-container">
+        <div id="search-rec-grid" class="carousel-track"></div>
+      </div>
+    </section>
+
+    <!-- Catalog -->
+    <section class="catalog animate-fade-in">
+      <div id="product-grid" class="product-grid-main">
+        <div style="text-align: center; grid-column: 1 / -1; padding: 2rem;">
+          <div class="loading-spinner" style="margin: 0 auto;"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Chat Full Screen View -->
+  <main class="container" id="chat-view"
+    style="display: none; padding-top: 1rem; padding-bottom: 1rem; height: calc(100vh - 70px);">
+    <div class="chat-full-window">
+      <div class="chat-messages" id="chat-messages">
+        <div class="message-wrapper bot">
+          <div class="msg-avatar"><svg viewBox="0 0 24 24" fill="var(--primary-color)" width="20" height="20"
+              style="margin-top:2px;">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg></div>
+          <div class="msg-content">
+            <div class="msg-sender">Trợ lý AI ShopAI</div>
+            <div class="msg-text">Xin chào! Tôi là trợ lý AI của ShopAI. Tôi có thể giúp bạn tìm kiếm sản phẩm, gợi ý
+              mua sắm hoặc trả lời câu hỏi. Hãy hỏi tôi bất cứ điều gì!</div>
+          </div>
+        </div>
+      </div>
+      <form class="chat-input-area" id="chat-form">
+        <input type="text" id="chat-input" class="chat-input" placeholder="Nhập tin nhắn..." autocomplete="off">
+        <button type="submit" class="chat-send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
 </html>

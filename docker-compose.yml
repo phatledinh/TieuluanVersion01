@@ -27,6 +27,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 60s
     networks:
       - ecom-net
 
@@ -137,6 +138,9 @@ services:
       - LSTM_META_PATH=trained_models/lstm_meta.json
       - FAISS_INDEX_PATH=trained_models/product_index.faiss
       - FAISS_MAPPING_PATH=trained_models/product_mapping.json
+    volumes:
+      - ai-trained-models:/app/trained_models
+      - ai-behavior-data:/app/data
     depends_on:
       neo4j:
         condition: service_healthy
@@ -161,6 +165,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 60s
     networks:
       - ecom-net
 
@@ -204,6 +209,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 60s
     networks:
       - ecom-net
 
@@ -291,6 +297,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 60s
     networks:
       - ecom-net
 
@@ -349,6 +356,8 @@ volumes:
   order-db-data:
   payment-db-data:
   shipping-db-data:
+  ai-trained-models:
+  ai-behavior-data:
 
 networks:
   ecom-net:
